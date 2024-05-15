@@ -19,6 +19,7 @@ import {
   getMinimumBalanceForRentExemptMint,
 } from "@solana/spl-token";
 import { randomBytes } from "crypto";
+import { getExplorerLink } from "@solana-developers/helpers";
 
 describe("anchor-escrow", () => {
   anchor.setProvider(anchor.AnchorProvider.env());
@@ -43,7 +44,7 @@ describe("anchor-escrow", () => {
 
   const log = async (signature: string): Promise<string> => {
     console.log(
-      `Your transaction signature: https://explorer.solana.com/transaction/${signature}?cluster=custom&customUrl=${connection.rpcEndpoint}`
+      `Your transaction signature: https://explorer.solana.com/transaction/${signature}?cluster=custom&customUrl=${connection.rpcEndpoint}`,
     );
     return signature;
   };
@@ -51,23 +52,37 @@ describe("anchor-escrow", () => {
   const seed = new BN(randomBytes(8));
 
   const [maker, taker, mintA, mintB] = Array.from({ length: 4 }, () =>
-    Keypair.generate()
+    Keypair.generate(),
   );
 
   const [makerAtaA, makerAtaB, takerAtaA, takerAtaB] = [maker, taker]
     .map((a) =>
       [mintA, mintB].map((m) =>
-        getAssociatedTokenAddressSync(m.publicKey, a.publicKey, false, tokenProgram)
-      )
+        getAssociatedTokenAddressSync(
+          m.publicKey,
+          a.publicKey,
+          false,
+          tokenProgram,
+        ),
+      ),
     )
     .flat();
 
   const escrow = PublicKey.findProgramAddressSync(
-    [Buffer.from("escrow"), maker.publicKey.toBuffer(), seed.toArrayLike(Buffer, "le", 8)],
-    program.programId
+    [
+      Buffer.from("escrow"),
+      maker.publicKey.toBuffer(),
+      seed.toArrayLike(Buffer, "le", 8),
+    ],
+    program.programId,
   )[0];
 
-  const vault = getAssociatedTokenAddressSync(mintA.publicKey, escrow, true, tokenProgram);
+  const vault = getAssociatedTokenAddressSync(
+    mintA.publicKey,
+    escrow,
+    true,
+    tokenProgram,
+  );
 
   // Accounts
   const accounts = {
@@ -82,7 +97,7 @@ describe("anchor-escrow", () => {
     escrow,
     vault,
     tokenProgram,
-  }
+  };
 
   it("Airdrop and create mints", async () => {
     let lamports = await getMinimumBalanceForRentExemptMint(connection);
@@ -93,7 +108,7 @@ describe("anchor-escrow", () => {
           fromPubkey: provider.publicKey,
           toPubkey: account.publicKey,
           lamports: 10 * LAMPORTS_PER_SOL,
-        })
+        }),
       ),
       ...[mintA, mintB].map((mint) =>
         SystemProgram.createAccount({
@@ -102,54 +117,80 @@ describe("anchor-escrow", () => {
           lamports,
           space: MINT_SIZE,
           programId: tokenProgram,
-        })
+        }),
       ),
       ...[
         { mint: mintA.publicKey, authority: maker.publicKey, ata: makerAtaA },
         { mint: mintB.publicKey, authority: taker.publicKey, ata: takerAtaB },
-      ]
-      .flatMap((x) => [
-        createInitializeMint2Instruction(x.mint, 6, x.authority, null, tokenProgram),
-        createAssociatedTokenAccountIdempotentInstruction(provider.publicKey, x.ata, x.authority, x.mint, tokenProgram),
-        createMintToInstruction(x.mint, x.ata, x.authority, 1e9, undefined, tokenProgram),
-      ])
+      ].flatMap((x) => [
+        createInitializeMint2Instruction(
+          x.mint,
+          6,
+          x.authority,
+          null,
+          tokenProgram,
+        ),
+        createAssociatedTokenAccountIdempotentInstruction(
+          provider.publicKey,
+          x.ata,
+          x.authority,
+          x.mint,
+          tokenProgram,
+        ),
+        createMintToInstruction(
+          x.mint,
+          x.ata,
+          x.authority,
+          1e9,
+          undefined,
+          tokenProgram,
+        ),
+      ]),
     ];
 
     await provider.sendAndConfirm(tx, [mintA, mintB, maker, taker]).then(log);
   });
 
-  it("Make", async () => {
-    await program.methods
+  const make = async () => {
+    const transactionSignature = await program.methods
       .make(seed, new BN(1e6), new BN(1e6))
       .accounts({ ...accounts })
       .signers([maker])
-      .rpc()
-      .then(confirm)
-      .then(log);
-  });
+      .rpc();
 
-  xit("Refund", async () => {
-    await program.methods
+    await confirm(transactionSignature);
+    log(getExplorerLink("transaction", transactionSignature));
+  };
+
+  const take = async () => {
+    const transactionSignature = await program.methods
+      .take()
+      .accounts({ ...accounts })
+      .signers([taker])
+      .rpc();
+
+    await confirm(transactionSignature);
+    log(getExplorerLink("transaction", transactionSignature));
+  };
+
+  const refund = async () => {
+    const transactionSignature = await program.methods
       .refund()
       .accounts({ ...accounts })
       .signers([maker])
-      .rpc()
-      .then(confirm)
-      .then(log);
+      .rpc();
+
+    await confirm(transactionSignature);
+    log(getExplorerLink("transaction", transactionSignature));
+  };
+
+  it("Makes an offer and refunds it successfully", async () => {
+    await make();
+    await refund();
   });
 
-  it("Take", async () => {
-    try {
-    await program.methods
-      .take()
-      .accounts({  ...accounts })
-      .signers([taker])
-      .rpc()
-      .then(confirm)
-      .then(log);
-    } catch(e) {
-      console.log(e);
-      throw(e)
-    }
+  it("Makes an offer and then takes it ", async () => {
+    await make();
+    await take();
   });
 });
