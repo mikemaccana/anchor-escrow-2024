@@ -11,7 +11,7 @@ import {
 import {
   MINT_SIZE,
   TOKEN_2022_PROGRAM_ID,
-  // TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountIdempotentInstruction,
   createInitializeMint2Instruction,
   createMintToInstruction,
@@ -21,6 +21,9 @@ import {
 import { randomBytes } from "crypto";
 import { getExplorerLink } from "@solana-developers/helpers";
 
+const TOKEN_PROGRAM: typeof TOKEN_2022_PROGRAM_ID | typeof TOKEN_PROGRAM_ID =
+  TOKEN_2022_PROGRAM_ID;
+
 describe("anchor-escrow", () => {
   anchor.setProvider(anchor.AnchorProvider.env());
 
@@ -29,9 +32,6 @@ describe("anchor-escrow", () => {
   const connection = provider.connection;
 
   const program = anchor.workspace.AnchorEscrow as Program<AnchorEscrow>;
-
-  const tokenProgram = TOKEN_2022_PROGRAM_ID;
-  // const tokenProgram = TOKEN_PROGRAM_ID;
 
   const confirm = async (signature: string): Promise<string> => {
     const block = await connection.getLatestBlockhash();
@@ -55,7 +55,7 @@ describe("anchor-escrow", () => {
           m.publicKey,
           a.publicKey,
           false,
-          tokenProgram,
+          TOKEN_PROGRAM,
         ),
       ),
     )
@@ -74,7 +74,7 @@ describe("anchor-escrow", () => {
     mintA.publicKey,
     escrow,
     true,
-    tokenProgram,
+    TOKEN_PROGRAM,
   );
 
   // Accounts
@@ -89,7 +89,7 @@ describe("anchor-escrow", () => {
     takerAtaB,
     escrow,
     vault,
-    tokenProgram,
+    tokenProgram: TOKEN_PROGRAM,
   };
 
   it("Airdrop and create mints", async () => {
@@ -109,7 +109,7 @@ describe("anchor-escrow", () => {
           newAccountPubkey: mint.publicKey,
           lamports,
           space: MINT_SIZE,
-          programId: tokenProgram,
+          programId: TOKEN_PROGRAM,
         }),
       ),
       ...[
@@ -121,14 +121,14 @@ describe("anchor-escrow", () => {
           6,
           x.authority,
           null,
-          tokenProgram,
+          TOKEN_PROGRAM,
         ),
         createAssociatedTokenAccountIdempotentInstruction(
           provider.publicKey,
           x.ata,
           x.authority,
           x.mint,
-          tokenProgram,
+          TOKEN_PROGRAM,
         ),
         createMintToInstruction(
           x.mint,
@@ -136,7 +136,7 @@ describe("anchor-escrow", () => {
           x.authority,
           1e9,
           undefined,
-          tokenProgram,
+          TOKEN_PROGRAM,
         ),
       ]),
     ];
