@@ -42,13 +42,6 @@ describe("anchor-escrow", () => {
     return signature;
   };
 
-  const log = async (signature: string): Promise<string> => {
-    console.log(
-      `Your transaction signature: https://explorer.solana.com/transaction/${signature}?cluster=custom&customUrl=${connection.rpcEndpoint}`,
-    );
-    return signature;
-  };
-
   const seed = new BN(randomBytes(8));
 
   const [maker, taker, mintA, mintB] = Array.from({ length: 4 }, () =>
@@ -148,7 +141,14 @@ describe("anchor-escrow", () => {
       ]),
     ];
 
-    await provider.sendAndConfirm(tx, [mintA, mintB, maker, taker]).then(log);
+    const transactionSignature = await provider.sendAndConfirm(tx, [
+      mintA,
+      mintB,
+      maker,
+      taker,
+    ]);
+
+    console.log(getExplorerLink("transaction", transactionSignature));
   });
 
   const make = async () => {
@@ -159,7 +159,7 @@ describe("anchor-escrow", () => {
       .rpc();
 
     await confirm(transactionSignature);
-    log(getExplorerLink("transaction", transactionSignature));
+    console.log(getExplorerLink("transaction", transactionSignature));
   };
 
   const take = async () => {
@@ -170,7 +170,7 @@ describe("anchor-escrow", () => {
       .rpc();
 
     await confirm(transactionSignature);
-    log(getExplorerLink("transaction", transactionSignature));
+    console.log(getExplorerLink("transaction", transactionSignature));
   };
 
   const refund = async () => {
@@ -181,7 +181,7 @@ describe("anchor-escrow", () => {
       .rpc();
 
     await confirm(transactionSignature);
-    log(getExplorerLink("transaction", transactionSignature));
+    console.log(getExplorerLink("transaction", transactionSignature));
   };
 
   it("Makes an offer and refunds it successfully", async () => {
