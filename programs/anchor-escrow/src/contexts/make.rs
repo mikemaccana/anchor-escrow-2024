@@ -12,6 +12,7 @@ use crate::Escrow;
 pub struct Make<'info> {
     #[account(mut)]
     pub maker: Signer<'info>,
+
     #[account(
         mint::token_program = token_program
     )]
@@ -35,6 +36,7 @@ pub struct Make<'info> {
         bump
     )]
     pub escrow: Account<'info, Escrow>,
+
     #[account(
         init,
         payer = maker,
@@ -43,6 +45,7 @@ pub struct Make<'info> {
         associated_token::token_program = token_program
     )]
     pub vault: InterfaceAccount<'info, TokenAccount>,
+
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
