@@ -19,7 +19,7 @@ import {
   getMinimumBalanceForRentExemptMint,
 } from "@solana/spl-token";
 import { randomBytes } from "crypto";
-import { getExplorerLink } from "@solana-developers/helpers";
+import { getExplorerLink, makeKeypairs } from "@solana-developers/helpers";
 
 const TOKEN_PROGRAM: typeof TOKEN_2022_PROGRAM_ID | typeof TOKEN_PROGRAM_ID =
   TOKEN_2022_PROGRAM_ID;
@@ -44,9 +44,7 @@ describe("anchor-escrow", () => {
 
   const seed = new BN(randomBytes(8));
 
-  const [maker, taker, mintA, mintB] = Array.from({ length: 4 }, () =>
-    Keypair.generate(),
-  );
+  const [maker, taker, mintA, mintB] = makeKeypairs(4);
 
   const [makerAtaA, makerAtaB, takerAtaA, takerAtaB] = [maker, taker]
     .map((a) =>
