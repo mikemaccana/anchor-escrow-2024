@@ -47,11 +47,11 @@ describe("anchor-escrow", () => {
   const [maker, taker, mintA, mintB] = makeKeypairs(4);
 
   const [makerAtaA, makerAtaB, takerAtaA, takerAtaB] = [maker, taker]
-    .map((a) =>
-      [mintA, mintB].map((m) =>
+    .map((keypair) =>
+      [mintA, mintB].map((mint) =>
         getAssociatedTokenAddressSync(
-          m.publicKey,
-          a.publicKey,
+          mint.publicKey,
+          keypair.publicKey,
           false,
           TOKEN_PROGRAM,
         ),
