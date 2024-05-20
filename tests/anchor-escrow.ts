@@ -182,12 +182,12 @@ describe("anchor-escrow", () => {
     console.log(getExplorerLink("transaction", transactionSignature));
   };
 
-  it("Makes an offer and refunds it successfully", async () => {
+  it("Makes an offer and refunds it when the maker asks", async () => {
     await make();
     await refund();
   });
 
-  it("Makes an offer and then takes it ", async () => {
+  it("Makes an offer and then swaps tokens when offer is taken", async () => {
     await make();
     await take();
   });
